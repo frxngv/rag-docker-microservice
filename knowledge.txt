@@ -1,0 +1,22 @@
+GUÍA DE REFERENCIA INTERNA - DOCKER Y CONTENEDORES
+
+1. CONCEPTOS FUNDAMENTALES:
+- Imagen de Docker: Es una plantilla de solo lectura que contiene un conjunto de instrucciones para crear un contenedor que se ejecute en la plataforma Docker. Se construyen usando un Dockerfile.
+- Contenedor: Es una instancia ejecutable de una imagen. Los contenedores están aislados del sistema host y de otros contenedores.
+- Docker Registry: Es un sistema de almacenamiento y distribución de imágenes de Docker con nombre. El registro público por defecto es Docker Hub, pero se pueden usar registros privados como GitHub Container Registry (GHCR).
+
+2. GESTIÓN DE DATOS Y PERSISTENCIA:
+- Por defecto, todos los archivos creados dentro de un contenedor se almacenan en una capa de escritura temporal. Si el contenedor se destruye, los datos se pierden.
+- Volúmenes (Volumes): Es el mecanismo preferido para persistir datos generados y utilizados por los contenedores Docker. Están completamente gestionados por Docker y aislados del sistema de archivos principal del host.
+- Bind Mounts: Permiten montar un archivo o directorio específico del host directamente en el contenedor. Son útiles para entornos de desarrollo (por ejemplo, para recargar código en vivo).
+
+3. REDES EN DOCKER (NETWORKING):
+- Bridge: Es el controlador de red por defecto. Se usa cuando las aplicaciones se ejecutan en contenedores independientes que necesitan comunicarse entre sí.
+- Host: Elimina el aislamiento de red entre el contenedor y el host de Docker. El contenedor usa directamente la red del host.
+- Overlay: Conecta múltiples demonios de Docker entre sí y permite que los servicios de un enjambre (Swarm) se comuniquen entre sí de forma segura.
+
+4. BUENAS PRÁCTICAS EN DOCKERFILES:
+- Usar imágenes base oficiales y ligeras, como Alpine Linux, para reducir el tamaño final de la imagen y la superficie de ataque.
+- Agrupar comandos `RUN` siempre que sea posible para minimizar el número de capas de la imagen.
+- Utilizar construcciones en múltiples etapas (Multi-stage builds) para separar el entorno de compilación del entorno de ejecución final, dejando atrás dependencias innecesarias.
+- Usar el archivo `.dockerignore` para evitar copiar archivos innecesarios (como `.git`, `node_modules` o entornos virtuales) al contexto de construcción.

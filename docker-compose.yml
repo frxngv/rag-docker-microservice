@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  rag-ai-bot:
+    build: .
+    container_name: experto-docker-bot
+    ports:
+      - "8000:8000"
+    # Gestión de variables de entorno
+    env_file:
+      - .env
+    # Gestión de volúmenes: Conectamos el archivo de texto al contenedor
+    volumes:
+      - ./knowledge.txt:/app/knowledge.txt

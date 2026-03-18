@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot - Experto en Docker</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .chat-container { width: 400px; background: white; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; height: 600px; }
+        .header { background: #0f172a; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 1.2rem; }
+        .chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .message { padding: 10px 15px; border-radius: 15px; max-width: 80%; line-height: 1.4; }
+        .user-msg { background: #3b82f6; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .bot-msg { background: #e2e8f0; color: #1e293b; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .input-area { display: flex; padding: 15px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        input[type="text"] { flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; outline: none; }
+        button { background: #3b82f6; color: white; border: none; padding: 10px 15px; margin-left: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #2563eb; }
+        .loading { font-size: 0.8rem; color: #64748b; align-self: flex-start; display: none; margin-left: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="header">🐳 Docker RAG Assistant</div>
+    <div class="chat-box" id="chat-box">
+        <div class="message bot-msg">¡Hola! Soy tu asistente experto en Docker. Pregúntame sobre volúmenes, redes o buenas prácticas.</div>
+    </div>
+    <div class="loading" id="loading">Pensando la respuesta...</div>
+    <div class="input-area">
+        <input type="text" id="user-input" placeholder="Escribe tu pregunta aquí..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">Enviar</button>
+    </div>
+</div>
+
+<script>
+    async function sendMessage() {
+        const inputField = document.getElementById('user-input');
+        const question = inputField.value.trim();
+        if (!question) return;
+
+        addMessage(question, 'user-msg');
+        inputField.value = '';
+        
+        const loading = document.getElementById('loading');
+        loading.style.display = 'block';
+
+        try {
+            // Llamada al endpoint /ask
+            const response = await fetch('/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: question })
+            });
+            
+            const data = await response.json();
+            addMessage(data.answer, 'bot-msg');
+        } catch (error) {
+            addMessage("Error de conexión con el servidor.", 'bot-msg');
+        } finally {
+            loading.style.display = 'none';
+        }
+    }
+
+    function addMessage(text, className) {
+        const chatBox = document.getElementById('chat-box');
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${className}`;
+        msgDiv.innerText = text;
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') sendMessage();
+    }
+</script>
+
+</body>
+</html>
