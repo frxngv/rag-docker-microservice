@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-bot-deployment
+  labels:
+    app: rag-bot
+spec:
+  replicas: 2 # Alta disponibilidad: 2 contenedores corriendo a la vez
+  selector:
+    matchLabels:
+      app: rag-bot
+  template:
+    metadata:
+      labels:
+        app: rag-bot
+    spec:
+      containers:
+      - name: rag-bot-container
+        image: rag-ai-bot:latest 
+        imagePullPolicy: IfNotPresent # Usa la imagen local del ordenador
+        ports:
+        - containerPort: 8000
+        # Inyectamos el secreto como variable de entorno
+        env:
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: gemini-api-secret
+              key: GEMINI_API_KEY
+        # Inyectamos el ConfigMap como si fuera el archivo knowledge.txt
+        volumeMounts:
+        - name: knowledge-volume
+          mountPath: /app/knowledge.txt
+          subPath: knowledge.txt
+      volumes:
+      - name: knowledge-volume
+        configMap:
+          name: rag-knowledge-map

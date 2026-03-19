@@ -4,3 +4,6 @@
 # Archivos de caché de Python (por si acaso)
 __pycache__/
 *.pyc
+
+# Secretos de Kubernetes
+k8s/secret.yaml
