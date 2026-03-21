@@ -50,3 +50,39 @@ Una vez que el contenedor esté en ejecución, abre tu navegador web y visita:
 El archivo `docker-compose.yml` está configurado para manejar:
 * **Variables de Entorno:** Inyecta de forma segura el archivo `.env`.
 * **Volúmenes (Bind Mounts):** El archivo `knowledge.txt` está montado como un volumen (`./knowledge.txt:/app/knowledge.txt`). Esto permite actualizar la base de conocimiento del chatbot en tiempo real sin necesidad de reconstruir la imagen de Docker.
+
+## 🚀 Bonus: Migración a Kubernetes (Alta Disponibilidad)
+
+Para ampliar el proyecto y garantizar la alta disponibilidad y la gestión segura de credenciales, el proyecto ha sido migrado de Docker Compose a **Kubernetes**.
+
+### Arquitectura K8s implementada:
+* **Deployment (`deployment.yaml`):** Configurado con 2 réplicas para garantizar Alta Disponibilidad (HA). Utiliza una imagen auto-construida mediante CI/CD (GitHub Actions) y alojada en GHCR.
+* **Service (`service.yaml`):** Actúa como balanceador de carga interno y expone la aplicación mediante un NodePort (30000).
+* **ConfigMap (`configmap.yaml`):** Inyecta la base de conocimiento (`knowledge.txt`) de forma distribuida a todos los pods, permitiendo que la aplicación sea *stateless*.
+* **Secret (`secret.yaml`):** Protege la API Key de Gemini. (secret-sample.yaml es un ejemplo de como se debería de ver)
+
+### Instrucciones de despliegue en entorno local (usando `kind`)
+
+Este proyecto está preparado para desplegarse fácilmente en un clúster local utilizando [kind](https://kind.sigs.k8s.io/) (Kubernetes IN Docker).
+
+1. **Levantar el clúster local:**
+   ```bash
+   kind create cluster
+   ```
+2. **Configurar credenciales:** Por seguridad, el repositorio no incluye el secreto real. Copia la plantilla y añade tu API Key:
+   ```bash
+   cp k8s/secret-template.yaml k8s/secret.yaml
+   # Edita k8s/secret.yaml y pon tu clave real de Google Gemini
+   ```
+3. **Aplicar los manifiestos:**
+   ```bash
+   kubectl apply -f k8s/
+   ```
+   (Puedes verificar que los pods están listos ejecutando *kubectl get pods*).
+4. **Exponer el servicio (Port-Forwarding):**
+   Abre un túnel seguro para acceder al servicio desde tu navegador:
+   ```bash
+   kubectl port-forward service/rag-bot-service 30000:8000
+   ```
+5. **Acceder a la aplicación:**
+   Abre tu navegador y entra en: 👉 http://localhost:30000
