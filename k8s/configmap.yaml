@@ -4,25 +4,67 @@ metadata:
   name: rag-knowledge-map
 data:
   knowledge.txt: |
-    GUÍA DE REFERENCIA INTERNA - DOCKER Y CONTENEDORES
+    ================================================================================
+    DOCKER Y CONTENEDORES: DE 0 A SITE RELIABILITY ENGINEER (SRE)
+    ================================================================================
 
-    1. CONCEPTOS FUNDAMENTALES:
-      - Imagen de Docker: Es una plantilla de solo lectura que contiene un conjunto de instrucciones para crear un contenedor que se ejecute en la plataforma Docker. Se construyen usando un Dockerfile.
-      - Contenedor: Es una instancia ejecutable de una imagen. Los contenedores están aislados del sistema host y de otros contenedores.
-      - Docker Registry: Es un sistema de almacenamiento y distribución de imágenes de Docker con nombre. El registro público por defecto es Docker Hub, pero se pueden usar registros privados como GitHub Container Registry (GHCR).
+    [1] FUNDAMENTOS ABSOLUTOS Y ARQUITECTURA CORE
+      1.1. Contenedor vs Máquina Virtual: Un contenedor es un proceso de Linux aislado mediante Namespaces (red, procesos, usuarios) y Cgroups (límites de CPU/RAM). Comparte el kernel del Host. No emula hardware. Una VM emula hardware y corre un Sistema Operativo completo.
+      1.2. Docker Daemon (dockerd): El motor principal. Escucha llamadas a la API REST de Docker y gestiona objetos (imágenes, contenedores, redes, volúmenes).
+      1.3. Containerd y Runc: Docker no ejecuta contenedores directamente. Delega en 'containerd' (gestor de ciclo de vida) que a su vez usa 'runc' (interactúa con el kernel para crear el aislamiento).
+      1.4. Imágenes y Sistema de Archivos OverlayFS: Las imágenes son inmutables y se construyen en capas apiladas (Union File System). Si un contenedor modifica un archivo, lo copia a su capa superior de lectura/escritura (Copy-on-Write), dejando la imagen original intacta.
 
-    2. GESTIÓN DE DATOS Y PERSISTENCIA:
-      - Por defecto, todos los archivos creados dentro de un contenedor se almacenan en una capa de escritura temporal. Si el contenedor se destruye, los datos se pierden.
-      - Volúmenes (Volumes): Es el mecanismo preferido para persistir datos generados y utilizados por los contenedores Docker. Están completamente gestionados por Docker y aislados del sistema de archivos principal del host.
-      - Bind Mounts: Permiten montar un archivo o directorio específico del host directamente en el contenedor. Son útiles para entornos de desarrollo (por ejemplo, para recargar código en vivo).
+    [2] INSTRUCCIONES DOCKERFILE: ANÁLISIS FORENSE
+      2.1. FROM: Imagen base. Usar versiones específicas (ej. node:18.17.0-alpine), NUNCA usar 'latest' en producción.
+      2.2. RUN vs CMD vs ENTRYPOINT:
+          - RUN: Ejecuta comandos DURANTE la creación de la imagen (ej. apt-get install). Crea una nueva capa.
+          - CMD: Comando POR DEFECTO al arrancar el contenedor. Se sobrescribe fácilmente pasando argumentos al 'docker run'.
+          - ENTRYPOINT: Convierte el contenedor en un ejecutable estricto. Si hay CMD y ENTRYPOINT, el CMD pasa a ser los argumentos por defecto del ENTRYPOINT.
+      2.3. COPY vs ADD: COPY transfiere archivos locales. ADD hace lo mismo pero además extrae archivos .tar automáticamente y puede descargar archivos de URLs (Desaconsejado por seguridad; usar 'RUN wget/curl' es mejor para controlar cachés).
+      2.4. ARG vs ENV: ARG solo existe durante el 'docker build' (ej. pasar un token para descargar código). ENV persiste y existe cuando el contenedor está corriendo (ej. cadena de conexión a la BD).
 
-    3. REDES EN DOCKER (NETWORKING):
-      - Bridge: Es el controlador de red por defecto. Se usa cuando las aplicaciones se ejecutan en contenedores independientes que necesitan comunicarse entre sí.
-      - Host: Elimina el aislamiento de red entre el contenedor y el host de Docker. El contenedor usa directamente la red del host.
-      - Overlay: Conecta múltiples demonios de Docker entre sí y permite que los servicios de un enjambre (Swarm) se comuniquen entre sí de forma segura.
+    [3] OPTIMIZACIÓN Y DOCKERFILE AVANZADO (BuildKit)
+      3.1. Layer Caching (Caché de capas): Ordena las instrucciones de menor a mayor frecuencia de cambio. 1º Dependencias del SO, 2º Archivos de dependencias (package.json / requirements.txt), 3º RUN install, 4º COPY del código fuente (que cambia siempre).
+      3.2. Multi-Stage Builds: El estándar de la industria. Ejemplo:
+          FROM golang:1.20 AS builder -> RUN go build -o app
+          FROM alpine:latest -> COPY --from=builder /app /app -> CMD ["./app"]
+          Reduce el tamaño drásticamente y elimina compiladores y vulnerabilidades del entorno de producción.
+      3.3. BuildKit Secrets y SSH: Para no dejar contraseñas en el historial de la imagen: 'RUN --mount=type=secret,id=mysecret cat /run/secrets/mysecret'.
 
-    4. BUENAS PRÁCTICAS EN DOCKERFILES:
-      - Usar imágenes base oficiales y ligeras, como Alpine Linux, para reducir el tamaño final de la imagen y la superficie de ataque.
-      - Agrupar comandos `RUN` siempre que sea posible para minimizar el número de capas de la imagen.
-      - Utilizar construcciones en múltiples etapas (Multi-stage builds) para separar el entorno de compilación del entorno de ejecución final, dejando atrás dependencias innecesarias.
-      - Usar el archivo `.dockerignore` para evitar copiar archivos innecesarios (como `.git`, `node_modules` o entornos virtuales) al contexto de construcción.
+    [4] ALMACENAMIENTO DE ALTA DISPONIBILIDAD Y ESTADO
+      4.1. Volúmenes Nombrados (Named Volumes): Creados y controlados por Docker (/var/lib/docker/volumes). Aislados del sistema de archivos del host. Indispensables para bases de datos (Postgres, MySQL, Redis).
+      4.2. Bind Mounts: Montan una ruta exacta del Host (/home/user/app -> /app). Tienen problemas de permisos en Linux (UID/GID mismatch). Usar solo para desarrollo (Hot-Reloading).
+      4.3. tmpfs Mounts: Almacenamiento ultrarrápido montado exclusivamente en la memoria RAM del host. Ideal para guardar secretos temporales, cachés efímeras o claves que no deben tocar el disco.
+      4.4. Volume Drivers: Permiten a Docker conectar volúmenes directamente a la nube (ej. Amazon EBS, Azure Files, NFS) sin que el contenedor se entere.
+
+    [5] NETWORKING E INGENIERÍA DE TRÁFICO
+      5.1. Bridge (Default vs Custom): La red 'bridge' predeterminada (docker0) es legacy; NO soporta resolución DNS automática (los contenedores no pueden hacerse ping por nombre). SIEMPRE se debe crear una red bridge personalizada ('docker network create <nombre>').
+      5.2. Host: Desactiva el aislamiento de red de Docker. El contenedor usa la IP de la máquina host. Útil para optimizar rendimiento masivo (evita el NAT), pero expone puertos directamente.
+      5.3. Macvlan e Ipvlan: Otorgan al contenedor una dirección MAC o IP nativa, haciéndolo parecer un servidor físico independiente en la red de la oficina/datacenter.
+      5.4. Expose vs Publish (-p): EXPOSE (en Dockerfile) solo documenta puertos. Publish ('-p 8080:80') crea reglas en iptables para enrutar tráfico real desde el Host hacia el contenedor.
+
+    [6] DOCKER COMPOSE Y ORQUESTACIÓN NATIVA
+      6.1. Restart Policies: Controlan la resurrección de contenedores. 'no' (por defecto), 'always' (reinicia siempre, incluso si lo paras manualmente y reinicias el PC), 'on-failure' (solo si da error), 'unless-stopped' (reinicia siempre excepto si el usuario lo paró explícitamente).
+      6.2. Healthchecks y Dependencias Estrictas: 'depends_on' normal solo espera el arranque. Para asegurar orden lógico:
+          healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost"]
+            interval: 30s
+          En el otro servicio usar: depends_on: mi_api: condition: service_healthy.
+      6.3. Perfiles (Profiles): 'profiles: ["frontend"]'. Permite arrancar entornos modulares.
+      6.4. Compose Overrides: Docker lee 'docker-compose.yml' y automáticamente fusiona encima 'docker-compose.override.yml' si existe. Ideal para separar config de producción y de desarrollo local.
+
+    [7] SEGURIDAD, HARDENING Y AISLAMIENTO EXTREMO (SecOps)
+      7.1. Rootless Mode: Ejecutar el Docker Daemon entero como usuario no root. Evita que un escape de contenedor comprometa todo el servidor.
+      7.2. Usuario no-root (Dockerfile): Siempre añadir: 'RUN groupadd -r app && useradd -r -g app appuser' -> 'USER appuser'.
+      7.3. Privileged Flag: NUNCA usar '--privileged'. Le da al contenedor acceso a todos los dispositivos (/dev) del host.
+      7.4. Linux Capabilities: Por defecto Docker da muchos permisos. Hardening: usar '--cap-drop=ALL' y añadir solo los mínimos necesarios (ej. '--cap-add=NET_BIND_SERVICE' para puertos < 1024).
+      7.5. Read-Only Root Filesystem: Ejecutar el contenedor con '--read-only'. Hace la imagen inmutable en tiempo de ejecución. Si la app necesita escribir (ej. logs), se le da un volumen tmpfs específico.
+
+    [8] TROUBLESHOOTING Y CÓDIGOS DE SALIDA (SRE PLAYBOOK)
+      8.1. Exit Code 0: Ejecución limpia y finalizada.
+      8.2. Exit Code 1: Error fatal de la aplicación (excepción, fallo en Node/Python). Mirar 'docker logs <id>'.
+      8.3. Exit Code 137 (OOMKilled - Out Of Memory): El Kernel Linux mató el proceso porque consumió más RAM de la fijada en 'mem_limit'. Solución: Optimizar la app, buscar fugas de memoria o aumentar límite.
+      8.4. Exit Code 139 (Segmentation Fault): Error crítico a nivel de memoria (C/C++ base, librerías incompatibles con la arquitectura, ej. ARM vs AMD64).
+      8.5. Exit Code 143: El contenedor recibió la señal SIGTERM ('docker stop') y se cerró correctamente respetando el tiempo de gracia (default 10s).
+      8.6. Contenedores Colgados (Zombies): 'docker stop' envía SIGTERM, si la app no responde en 10s, Docker envía SIGKILL (Exit 137). Las apps deben estar programadas para atrapar SIGTERM y cerrar conexiones a bases de datos antes de morir (Graceful Shutdown).
+      8.7. Limpieza Nuclear: 'docker system prune -a --volumes --force'. Destruye TODO lo que no esté en ejecución (Imágenes sin contenedor, redes huérfanas, cachés de BuildKit, volúmenes desconectados).
