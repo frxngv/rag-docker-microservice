@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
       - name: rag-bot-container
-        image: rag-ai-bot:latest 
-        imagePullPolicy: IfNotPresent # Usa la imagen local del ordenador
+        image: ghcr.io/frxngv/rag-docker-microservice:latest
+        imagePullPolicy: Always # Siempre la versión más nueva
         ports:
         - containerPort: 8000
         # Inyectamos el secreto como variable de entorno
