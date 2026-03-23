@@ -78,7 +78,7 @@ Este proyecto está preparado para desplegarse fácilmente en un clúster local 
    ```bash
    kubectl apply -f k8s/
    ```
-   (Puedes verificar que los pods están listos ejecutando *kubectl get pods*).
+   *(Puedes verificar que los pods están listos ejecutando **kubectl get pods**).*
 4. **Exponer el servicio (Port-Forwarding):**
    Abre un túnel seguro para acceder al servicio desde tu navegador:
    ```bash
