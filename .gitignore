@@ -7,3 +7,17 @@ __pycache__/
 
 # Secretos de Kubernetes
 k8s/secret.yaml
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.*.tf
+*.tfvars
+*.tfvars.json
+
+# Kubeconfig local generado por Kind/Terraform
+infra/cluster-gitops-pro-config
