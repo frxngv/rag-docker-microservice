@@ -28,7 +28,7 @@ Sigue estos pasos para arrancar el microservicio en tu máquina usando Docker:
 
 ### 1. Clonar el repositorio
 ```bash
-git clone [https://github.com/frxngv/rag-docker-microservice.git](https://github.com/frxngv/rag-docker-microservice.git)
+git clone https://github.com/frxngv/rag-docker-microservice.git
 cd rag-docker-microservice
 ```
 
@@ -112,7 +112,7 @@ Una vez creado el clúster, instalamos ArgoCD. A partir de este momento, GitHub 
 ```powershell
 # Crear namespace e instalar ArgoCD
 kubectl create namespace argocd
-kubectl apply -n argocd -f [https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml](https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml)
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 # Aplicar el contrato GitOps (Conecta el clúster con GitHub)
 kubectl apply -f infra/bot-gitops.yaml
@@ -138,7 +138,7 @@ kubectl create secret generic gemini-api-secret --from-literal=GEMINI_API_KEY="T
 Para monitorizar el consumo de CPU, RAM y Red de la IA, desplegamos el ecosistema completo de Prometheus usando Helm.
 
 ```powershell
-helm repo add prometheus-community [https://prometheus-community.github.io/helm-charts](https://prometheus-community.github.io/helm-charts)
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 helm install monitorizacion prometheus-community/kube-prometheus-stack --namespace monitorizacion --create-namespace
 ```
